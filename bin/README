@@ -1,0 +1,12 @@
+
+news_xml2alvis.pl  <XML suffix> <meta suffix> <orig suffix> <root dir> <out dir> <N per output dir> <Meta file encoding>
+
+	Scans recursively <root dir>, looking for files of these suffixes:
+           <XML suffix>   news XML file
+           <meta suffix>  its Meta file
+           <orig suffix>  the original HTML file
+	and outputs Alvis XML under <out dir>, each record in a file of its
+	own, <N per output dir> per subdirectory.  <Meta file encoding> 
+	gives the encoding of the Meta files.
+        
+   
