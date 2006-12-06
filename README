@@ -1,4 +1,4 @@
-Alvis-Convert version 0.2
+Alvis-Convert version 0.3
 ================================
 
 This is a module collecting Alvis XML format conversion methods for any 
@@ -6,15 +6,18 @@ number of source formats.
 
 Contains these conversion scripts:
 
-    wikipedia2alvis.pl
     alvis_wikipedia_add_cats.pl
     news_xml2alvis.pl
+    wikipedia2alvis.pl
     html2alvis.pl
     html2plain.pl
     ainodump2alvis.pl
     alvisDecollect.pl
     alvisXMLmerge.pl
     alvisXMLsplit.pl
+    alvisXMLjoin.pl
+    alvisXSL.pl
+    alvisSource.pl
 
 INSTALLATION
 
@@ -30,25 +33,31 @@ DEPENDENCIES
 This module requires these other modules and libraries:
 
    Data::Dumper
+   Storable
    Encode
+   Encode::Guess
    XML::LibXML
    Compress::Zlib
    HTML::Encoding
    File::Type
+   File::Find
    Parse::MediaWikiDump
    Digest::MD5
+   MIME::Base64
+   Time::Simple
+   Carp
+   Cwd
 
 Additionally, the scripts in bin/ require:
 
-   Cwd
    File::Copy
-   File::Find
    File::Path
    Getopt::Long
    IO::Handle
    Pod::Usage
    POSIX
    Time::HiRes
+   Alvis::Pipeline
 
 COPYRIGHT AND LICENCE
 

@@ -1,6 +1,6 @@
 package Alvis::Convert;
 
-$Alvis::Convert::VERSION = '0.2';
+$Alvis::Convert::VERSION = '0.3';
 
 ########################################################################
 #

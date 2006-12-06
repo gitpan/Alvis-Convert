@@ -1,5 +1,3 @@
-#!/usr/bin/perl -w
-
 use strict;
 use Test::More qw(no_plan);
 
@@ -7,7 +5,7 @@ my $outdir = 't/test-data/out';
 mkdir $outdir unless (-d $outdir);
 `rm -rf $outdir/*`;
 
-`perl -w bin/alvisXMLmerge.pl -e t/test-data/extra/ -o $outdir -c bin/merger.config t/test-data/original/`;
+`perl -w bin/alvisXMLmerge -e t/test-data/extra/ -o $outdir -c bin/merger.config t/test-data/original/`;
 
 ok (-e $outdir.'/0/101.alvis');
 ok (-e $outdir.'/0/0.alvis');
@@ -17,7 +15,7 @@ ok (-e $outdir.'/1/1000.alvis');
 
  
 
-`perl -w bin/alvisXMLmerge.pl -extra-file t/test-data/extra-all.xml -o $outdir -c bin/merger.config t/test-data/original/`;
+`perl -w bin/alvisXMLmerge -extra-file t/test-data/extra-all.xml -o $outdir -c bin/merger.config t/test-data/original/`;
 ok (-e $outdir.'/0/101.alvis');
 ok (-e $outdir.'/0/0.alvis');
 ok (-e $outdir.'/1/1000.alvis');

@@ -70,6 +70,7 @@ sub morefiles () {
   }
   return 0;
 }
+
 sub nextfile () {
   my $nf;
   if ( $usingdir ) {
@@ -81,7 +82,7 @@ sub nextfile () {
     }
     $usingdir = 0;
     $withdir = "";
-    return nextfile();
+    return &nextfile();
   } 
   $nf = shift(@files);
   #print STDERR "Got $nf\n";
@@ -94,10 +95,10 @@ sub nextfile () {
       @dirfiles = sort(glob("$nf/*")); 
       $withdir = $nf;
       $usingdir = 1;
-      return nextfile();
+      return &nextfile();
     } else {
       #print STDERR "Open on $nf failed\n";
-      return nextfile();
+      return &nextfile();
     }
   }
   if ( -f $nf ) {
@@ -105,7 +106,7 @@ sub nextfile () {
     return $nf;
   }
   #print STDERR "Recurse\n";
-  return nextfile();
+  return &nextfile();
 }
 
 my $xslbuff = "";
@@ -122,7 +123,7 @@ sub nextline () {
       #  when opening, have to filter initial stuff
       $reading = 1;
       if ( !$fullhead ) {
-	while ( ($_ = <XIN>) && 
+	while ( defined($_ = <XIN>) && 
 		( /<\?xml/ || /<$GROUPELEMENT/ ) ) {
 	  $fullhead .= $_;
 	}
@@ -130,7 +131,7 @@ sub nextline () {
 	$fullhead =~ s/<$GROUPELEMENT([^>]*)>/<$GROUPELEMENT $GROUPELEMENTEXTRA>/;
 	print FOUT $fullhead;
       } else {
-	while ( ($_ = <XIN>) && 
+	while ( defined($_ = <XIN>) && 
 		( /<\?xml/ || /<$GROUPELEMENT/ ) ) {
 	  ;
 	}
@@ -184,22 +185,22 @@ sub XSLfill {
 	if ( eof(XIN) ) {
 	    close(XIN);
 	    my $nf;
-	    while ( eof(XIN) && ($nf=&nextfile()) ) {
-
-		#  more input XML
-		if ( $usegzip ) {
-		    open(XIN,"zcat $nf |");
-		} elsif ( $usebzip2 ) {
-		    open(XIN,"bzcat $nf |");
-		} else {
-			*XIN = Alvis::Utils::open_file($nf);
-			#open(XIN, "<$nf");
-		} 
-		if ( eof(XIN) ) {
-		  print STDERR "Open on $nf failed\n";
-		}
-		
-		 
+	    my $closed = 1;
+	    while ( $closed && ($nf=&nextfile()) ) {
+	      #  more input XML
+	      $closed = 0;
+	      if ( $usegzip ) {
+		open(XIN,"zcat $nf |");
+	      } elsif ( $usebzip2 ) {
+		open(XIN,"bzcat $nf |");
+	      } else {
+		*XIN = Alvis::Utils::open_file($nf);
+		#open(XIN, "<$nf");
+	      } 
+	      if ( eof(XIN) ) {
+		$closed = 1;
+		print STDERR "Open on $nf failed\n";
+	      }	
 	    }
 	    if ( $usedir == 0 ) {
 	      print STDERR "Reading $nf for $XSL\n";
@@ -249,8 +250,6 @@ sub XSLfill {
         # print "#######################################\n";
         # exec("cat ");
 	exec("xsltproc $XSLARGS $XSL - ");
-	print STDERR "xsltproc exec failed\n";
-	exit(1);
     }
     waitpid($pid,0);
     if ( WEXITSTATUS($?) && WEXITSTATUS($?)!=255 ) {

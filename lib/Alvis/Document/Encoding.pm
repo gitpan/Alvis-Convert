@@ -618,17 +618,12 @@ sub from_to
     my $source_enc=shift;
     my $target_enc=shift;
 
-    if ($target_enc=~/^\s*utf-?8\s*$/isgo)
-    {
-	# leaves the bl***y UTF-8 flag on
-	$text=decode($source_enc,$text); 
-    }
-    else
     {
 	eval
 	{
 	    Encode::from_to($text,
-			    $source_enc,$target_enc,Encode::FB_QUIET);
+			    $source_enc,$target_enc,0);
+			    # $source_enc,$target_enc,Encode::FB_QUIET);
 	};
 	if ($@)
 	{
@@ -639,8 +634,12 @@ sub from_to
 				  "target encoding: $target_enc. Why? $err.");
 	    return undef;
 	}
+        if ($target_enc=~/^\s*utf-?8\s*$/isgo)
+        {
+	    # leaves the bl***y UTF-8 flag on
+	    Encode::_utf8_on($text); 
+        }
     }
-
     return $text;
 }
 
@@ -727,15 +726,27 @@ sub guess_and_convert
     my $result; 
     for my $enc_guess (@enc_guesses)
     {
-	$result=$self->convert($text,$enc_guess,$target_enc);
-	if (defined($result))
-	{
-	    return $result;
+	if ( $target_enc eq "utf8" && ( $enc_guess =~ /utf-?8/i ) ) {
+	   return $text;
+        } else {
+           $result=$self->convert($text,$enc_guess,$target_enc);
+	   if (defined($result))
+	   {
+	       return $result;
+	   }
 	}
     }
     if (!defined($result))
     {
+        #  test if its UTF-8 already
+	&Encode::_utf8_on($text);
+	if (  &Encode::is_utf8($text) ) {
+		return $text;
+        }
+         &Encode::_utf8_off($text);
 	$self->_set_err_state($ERR_GUESS_AND_CONVERT);
+        # print STDERR join("==", @enc_guesses) . " -> $target_enc : undef\n";
+	# print STDERR "\n$text\n\n";
 	return undef;
     }
 
