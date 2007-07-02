@@ -1,6 +1,6 @@
 package Alvis::Convert;
 
-$Alvis::Convert::VERSION = '0.3';
+$Alvis::Convert::VERSION = '0.4';
 
 ########################################################################
 #
@@ -333,6 +333,10 @@ sub HTML
     {
 	$src_enc=$self->{sourceEncoding};
     }
+    else
+    {
+#	warn "NO SOURCE ENCODING GIVEN IN OPTIONS TO HTML() OR IN new()";
+    }
 
     if ($opts->{sourceEncodingFromMeta} || $self->{sourceEncodingFromMeta})
     {
@@ -342,7 +346,7 @@ sub HTML
 	    $src_enc=$detected;
 	}
     }
-
+    
     my ($can_doc,$header)=
 	$self->{canonicalConverter}->HTML($html,
 					  {title=>1,
@@ -631,19 +635,61 @@ sub read_HTML
 {
     my $self=shift;
     my $f=shift;
+    my $meta_txt=shift;
 
-    if (!defined(open(H,"<$f")))
-    {
-	$self->_set_err_state($ERR_HTML_F,
-			      "File: \"$f\".");
-	return undef;
-    }
     my $html_txt="";
-    while (my $l=<H>)
+
+    # Stupid duplicating of "how the f**k do you read UTF8 in Perl?" fix
+    my $meta=Alvis::Document::Meta->new(text=>$meta_txt);
+    if (!defined($meta))
     {
-	$html_txt.=$l;
+        $self->_set_err_state($ERR_META,
+                              "Meta text:\"$meta_txt\".");
+        return undef;
     }
-    close(H);
+
+    my $src_enc;
+    if ($self->{sourceEncoding})
+    {
+	$src_enc=$self->{sourceEncoding};
+    }
+    if ($self->{sourceEncodingFromMeta})
+    {
+        my $detected=$meta->get('detectedCharSet');
+        if ($detected)
+        {
+            $src_enc=$detected;
+        }
+    }
+
+    if (defined($src_enc) && $src_enc=~/^\s*utf\s*\-?\s*8\s*$/i)
+    {
+	if (!defined(open(H,"<:utf8",$f)))
+        {
+            $self->_set_err_state($ERR_HTML_F,
+                                  "File: \"$f\".");
+            return undef;
+        }
+        while (my $l=<H>)
+        {
+            $html_txt.=$l;
+        }
+        close(H);
+    }
+    else
+    {
+	if (!defined(open(H,"<$f")))
+	{
+	    $self->_set_err_state($ERR_HTML_F,
+				  "File: \"$f\".");
+	    return undef;
+	}
+	while (my $l=<H>)
+	{
+	    $html_txt.=$l;
+	}
+	close(H);
+    }
 
     return $html_txt;
 }
@@ -653,21 +699,67 @@ sub read_meta
     my $self=shift;
     my $f=shift;
 
-    if (!defined(open(M,"<$f")))
-    {
-	$self->_set_err_state($ERR_META_F,
-			      "File: \"$f\".");
-	return undef;
-    }
     my $meta_txt="";
-    while (my $l=<M>)
-    {
-	$meta_txt.=$l;
-    }
-    close(M);
 
-    if (!defined($self->{metaEncoding}))
+    if (defined($self->{metaEncoding}))
     {
+	if ($self->{metaEncoding}=~/^\s*utf\s*\-?\s*8\s*$/i)
+	{
+	    if (!defined(open(M,"<:utf8",$f)))
+            {
+                $self->_set_err_state($ERR_META_F,
+                                      "File: \"$f\".");
+                return undef;
+            }
+            while (my $l=<M>)
+            {
+                $meta_txt.=$l;
+            }
+            close(M);
+	}
+	else  # non-UTF8
+	{
+	    if (!defined(open(M,"<$f")))
+	    {
+		$self->_set_err_state($ERR_META_F,
+				      "File: \"$f\".");
+		return undef;
+	    }
+	    while (my $l=<M>)
+	    {
+		$meta_txt.=$l;
+	    }
+	    close(M);
+	    
+	    eval
+            {
+	      Encode::from_to($meta_txt,
+			      $self->{metaEncoding},'utf-8',Encode::FB_WARN);
+            };
+            if ($@)
+            {
+                $self->_set_err_state($ERR_ENCODING_CONV,
+                                      "$@. Supposed source encoding of \"$f\":" .
+                                      "\"$self->{metaEncoding}\".");
+                return undef;
+            }
+	}
+    }
+    else # encoding unknown
+    {
+	if (!defined(open(M,"<$f")))
+	{
+	    $self->_set_err_state($ERR_META_F,
+				  "File: \"$f\".");
+	    return undef;
+	}
+	my $meta_txt="";
+	while (my $l=<M>)
+	{
+	    $meta_txt.=$l;
+	}
+	close(M);
+	
 	$meta_txt=$self->{encodingWizard}->try_to_convert_to_utf8($meta_txt,
 								  'text',
 								  'plain');
@@ -676,24 +768,6 @@ sub read_meta
 	    $self->_set_err_state($ERR_UTF8_CONV,
 				  $self->{encodingWizard}->errmsg());
 	    return undef;
-	}
-    }
-    else
-    {
-	if ($self->{metaEncoding}!~/^\s*utf\-?8\s*$/isgo)
-	{
-	    eval
-	    {
-		Encode::from_to($meta_txt,
-				$self->{metaEncoding},'utf-8',Encode::FB_WARN);
-	    };
-	    if ($@)
-	    {
-		$self->_set_err_state($ERR_ENCODING_CONV,
-				      "$@. Supposed source encoding of \"$f\":" .
-				      "\"$self->{metaEncoding}\".");
-		return undef;
-	    }
 	}
     }
 
@@ -1154,7 +1228,7 @@ Options:
 
 =head2 read_HTML()
 
-    $html_txt=$C->read_HTML($html_file});
+    $html_txt=$C->read_HTML($html_file,$meta_txt);
      if (!defined($html_txt))
      {
          warn "Reading the HTML failed. " .

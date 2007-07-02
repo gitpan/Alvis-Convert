@@ -1,5 +1,8 @@
 Revision history for Perl extension Alvis::Convert.
 
+0.4
+  * fixed double utf-8 encoding bug
+
 0.3
 	* removed .pl extension for all scripts in bin
 	* alvisXMLsplit.pl	bugs fixed

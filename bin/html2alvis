@@ -1,5 +1,8 @@
 #!/usr/bin/perl -w
 
+eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
+    if 0; # not running under some shell
+
 use Getopt::Long;
 Getopt::Long::Configure ("bundling");
 use Pod::Usage;
@@ -142,7 +145,8 @@ sub _convert_collection
 	
 	if (exists($html_entries{$base_name}{htmlF}))
 	{
-	    $html_txt=$C->read_HTML($html_entries{$base_name}{htmlF});
+	    $html_txt=$C->read_HTML($html_entries{$base_name}{htmlF},
+                                    $meta_txt);
 	    if (!defined($html_txt))
 	    {
 		warn "Reading the HTML for basename \"$base_name\" failed. " .
@@ -185,11 +189,11 @@ __END__
 
 =head1 NAME
     
-    html2alvis.pl - HTML to Alvis XML converter
+    html2alvis - HTML to Alvis XML converter
     
 =head1 SYNOPSIS
     
-    html2alvis.pl [options] [source directory ...]
+    html2alvis [options] [source directory ...]
 
   Options:
 
@@ -276,9 +280,9 @@ __END__
     etc.) can be given in a separate meta file, one per each document,
     recognized by the shared basename. E.g. the HTML document is
     called foo.original and the meta information is in foo.meta.
-    In this case html2alvis.pl should be called like this:
+    In this case html2alvis should be called like this:
    
-          html2.alvis.pl --html-ext original --meta-ext meta  
+          html2.alvis --html-ext original --meta-ext meta  
     
 =cut
 
